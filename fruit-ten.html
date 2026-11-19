@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>과일 10 만들기</title>
+<style>
+  :root{
+    --bg:#FF9A3D; --bg2:#FF8418;
+    --board:#FFC07A; --board-edge:#F0974A;
+    --fruit:#FF8A1A; --fruit-dark:#E55E00; --shine:#FFE0B8;
+    --leaf:#3F9C4E; --stem:#6B4A2B;
+    --num:#ffffff; --num-shadow:rgba(110,40,0,.6);
+    --panel:#FFF6EC; --text:#5A2600; --accent:#D85A00;
+    --ok:#2FB35A;
+  }
+  body[data-theme="peach"]{
+    --bg:#FFADC4; --bg2:#FF94B2;
+    --board:#FFD3DF; --board-edge:#F49AB4;
+    --fruit:#FF8FAE; --fruit-dark:#E9607F; --shine:#FFE6EE;
+    --leaf:#5FAE57; --stem:#7A5236;
+    --num:#ffffff; --num-shadow:rgba(140,30,60,.55);
+    --panel:#FFF4F7; --text:#6E1E36; --accent:#D9476F;
+  }
+  body[data-theme="grape"]{
+    --bg:#C7B3E6; --bg2:#B69EDD;
+    --board:#E2D6F3; --board-edge:#B9A2DE;
+    --fruit:#9C7BDB; --fruit-dark:#6E4DB5; --shine:#E9DEFB;
+    --leaf:#5C9A4A; --stem:#5B4636;
+    --num:#ffffff; --num-shadow:rgba(50,20,100,.6);
+    --panel:#F7F3FD; --text:#3D2470; --accent:#7A55C9;
+  }
+  body[data-theme="lemon"]{
+    --bg:#FFDF6B; --bg2:#FFD23F;
+    --board:#FFF0B0; --board-edge:#EFCB52;
+    --fruit:#FFD93B; --fruit-dark:#E9B300; --shine:#FFF8D6;
+    --leaf:#4F9E3F; --stem:#6B5A2B;
+    --num:#6A4800; --num-shadow:rgba(255,255,255,.7);
+    --panel:#FFFBEA; --text:#5A4300; --accent:#C29200;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    background:radial-gradient(circle at 20% 10%, var(--bg) 0%, var(--bg2) 100%);
+    background-color:var(--bg);
+    color:var(--text);
+    display:flex;justify-content:center;align-items:center;
+    min-height:100vh;padding:12px 16px;
+    transition:background .4s;
+    -webkit-user-select:none;user-select:none;
+  }
+  .game{width:min(100%, 1040px, calc((100vh - 140px) * 1.66));position:relative}
+
+  /* ---------- 상단 바 ---------- */
+  .top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:8px}
+  .settings{position:relative;justify-self:start}
+  .btn{
+    font:inherit;font-weight:700;border:0;cursor:pointer;border-radius:999px;
+    background:var(--panel);color:var(--text);padding:8px 14px;
+    box-shadow:0 3px 0 var(--board-edge);
+  }
+  .btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--board-edge)}
+  .panel{
+    position:absolute;top:calc(100% + 8px);left:0;z-index:30;
+    background:var(--panel);border-radius:14px;padding:12px;min-width:200px;
+    box-shadow:0 10px 30px rgba(0,0,0,.2);
+  }
+  .panel h3{margin:0 0 8px;font-size:14px}
+  .theme-opt{
+    display:flex;align-items:center;gap:10px;width:100%;
+    font:inherit;font-size:15px;color:var(--text);background:transparent;
+    border:2px solid transparent;border-radius:10px;padding:6px 8px;cursor:pointer;text-align:left;
+  }
+  .theme-opt:hover{background:rgba(0,0,0,.05)}
+  .theme-opt.active{border-color:var(--accent);font-weight:700}
+  .sw{width:22px;height:22px;border-radius:50%;flex:none;box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
+
+  .title{text-align:center;line-height:1.15}
+  .title h1{margin:0;font-size:clamp(16px,2.6vw,24px)}
+  .stats{font-size:clamp(13px,1.8vw,16px);margin-top:2px}
+  .stats b{font-size:1.25em}
+  #score.bump{display:inline-block;animation:bump .3s}
+  @keyframes bump{50%{transform:scale(1.4)}}
+
+  .timer{justify-self:end;font-weight:800;font-size:clamp(16px,2.4vw,22px);
+    background:var(--panel);padding:6px 14px;border-radius:999px;font-variant-numeric:tabular-nums}
+  .timer.warn{color:#D7263D;animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.55}}
+  .timebar{height:10px;border-radius:99px;background:rgba(255,255,255,.4);overflow:hidden;margin-bottom:10px}
+  #timeFill{height:100%;width:100%;background:var(--accent);border-radius:99px;transition:width .1s linear}
+
+  /* ---------- 보드 ---------- */
+  #board{
+    position:relative;display:grid;grid-template-columns:repeat(17,1fr);
+    padding:10px;border-radius:18px;background:var(--board);
+    box-shadow:0 6px 0 var(--board-edge), 0 14px 30px rgba(0,0,0,.15);
+    touch-action:none;cursor:crosshair;
+  }
+  .cell{position:relative;aspect-ratio:1;container-type:inline-size}
+  .cell svg{position:absolute;inset:4%;width:92%;height:92%;overflow:visible;transition:transform .12s, filter .12s}
+  .cell .body{fill:url(#fruitGrad)}
+  .cell .shine{fill:var(--shine);opacity:.75}
+  .cell .leaf{fill:var(--leaf)}
+  .cell .stem{stroke:var(--stem);stroke-width:2;stroke-linecap:round;fill:none}
+  .cell .crease{display:none;stroke:var(--fruit-dark);stroke-width:1.4;fill:none;opacity:.55}
+  body[data-theme="peach"] .cell .crease{display:block}
+  .cell .dots{display:none;fill:var(--fruit-dark);opacity:.35}
+  body[data-theme="tangerine"] .cell .dots,
+  body[data-theme="lemon"] .cell .dots{display:block}
+  .cell .n{
+    position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);
+    font-weight:800;font-size:46cqw;color:var(--num);
+    text-shadow:0 1px 0 var(--num-shadow),0 0 3px var(--num-shadow);
+    pointer-events:none;
+  }
+  .cell.sel svg{transform:scale(1.1);filter:brightness(1.12) drop-shadow(0 2px 3px rgba(0,0,0,.25))}
+  .cell.gone svg,.cell.gone .n{animation:pop .35s forwards}
+  @keyframes pop{0%{transform:scale(1.1)}40%{transform:scale(1.35);opacity:.9}100%{transform:scale(.2);opacity:0}}
+  .cell.gone .n{animation-name:popn}
+  @keyframes popn{to{opacity:0;transform:translate(-50%,-90%) scale(.6)}}
+  .cell.spawn svg,.cell.spawn .n{animation:spawn .35s backwards;animation-delay:inherit}
+  @keyframes spawn{from{opacity:0;transform:scale(.3)}}
+  .cell.spawn .n{animation-name:spawnn}
+  @keyframes spawnn{from{opacity:0}}
+
+  #sel{
+    position:absolute;display:none;pointer-events:none;z-index:5;
+    border:3px dashed rgba(255,255,255,.95);border-radius:10px;
+    background:rgba(255,255,255,.22);
+  }
+  #sel.ok{border-style:solid;border-color:var(--ok);background:rgba(47,179,90,.18)}
+  #sel .sum{
+    position:absolute;right:-3px;top:-26px;background:var(--panel);color:var(--text);
+    font-weight:800;font-size:13px;padding:2px 8px;border-radius:99px;
+  }
+  #sel.ok .sum{background:var(--ok);color:#fff}
+
+  .float{position:absolute;z-index:6;pointer-events:none;font-weight:900;font-size:22px;color:#fff;
+    text-shadow:0 2px 0 rgba(0,0,0,.25);animation:float .8s forwards}
+  @keyframes float{to{transform:translateY(-40px);opacity:0}}
+
+  .toast{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:20;
+    background:var(--panel);color:var(--text);padding:14px 22px;border-radius:16px;
+    font-weight:800;font-size:clamp(15px,2.2vw,20px);text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);animation:toastIn .25s;
+  }
+  @keyframes toastIn{from{transform:translate(-50%,-50%) scale(.7);opacity:0}}
+
+  /* ---------- 오버레이 ---------- */
+  .overlay{
+    position:absolute;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.25);border-radius:18px;
+  }
+  .overlay[hidden]{display:none}
+  .card{background:var(--panel);border-radius:20px;padding:24px 28px;text-align:center;max-width:420px;
+    box-shadow:0 16px 40px rgba(0,0,0,.25)}
+  .card h2{margin:0 0 10px}
+  .card p{margin:6px 0;line-height:1.5}
+  .card .big{font-size:42px;font-weight:900;color:var(--accent);margin:8px 0}
+  .card .btn{margin-top:14px;font-size:18px;padding:10px 28px;background:var(--accent);color:#fff;
+    box-shadow:0 4px 0 var(--fruit-dark)}
+</style>
+</head>
+<body data-theme="tangerine">
+
+<!-- 과일 그라데이션 (테마 색을 CSS 변수로 사용) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="fruitGrad" cx="38%" cy="35%" r="70%">
+      <stop offset="0%" style="stop-color:var(--fruit)"/>
+      <stop offset="65%" style="stop-color:var(--fruit)"/>
+      <stop offset="100%" style="stop-color:var(--fruit-dark)"/>
+    </radialGradient>
+  </defs>
+</svg>
+
+<div class="game">
+  <header class="top">
+    <div class="settings">
+      <button class="btn" id="setBtn" aria-expanded="false">⚙ 설정</button>
+      <div class="panel" id="setPanel" hidden>
+        <h3>테마 선택</h3>
+        <div id="themeList"></div>
+      </div>
+    </div>
+    <div class="title">
+      <h1 id="titleText">🍊 귤 10 만들기</h1>
+      <div class="stats">점수 <b id="score">0</b> · <span id="round">1</span>판</div>
+    </div>
+    <div class="timer" id="timer">2:00</div>
+  </header>
+  <div class="timebar"><div id="timeFill"></div></div>
+
+  <div style="position:relative">
+    <div id="board"><div id="sel"><span class="sum"></span></div></div>
+
+    <div class="overlay" id="startOv">
+      <div class="card">
+        <h2 id="startTitle">🍊 귤 10 만들기</h2>
+        <p>드래그로 사각형을 그려<br>숫자의 합이 <b>10</b>이 되면 과일이 사라져요.</p>
+        <p>지운 과일 1개 = 1점 · 제한 시간 <b>2분</b></p>
+        <p style="font-size:14px;opacity:.8">판을 다 비우거나 더 이상 10을 만들 수 없으면<br>새 판이 나오고 점수는 계속 누적돼요.</p>
+        <button class="btn" id="startBtn">시작하기</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="overOv" hidden>
+      <div class="card">
+        <h2>⏰ 시간 종료!</h2>
+        <div class="big" id="finalScore">0</div>
+        <p id="finalInfo"></p>
+        <button class="btn" id="againBtn">다시 하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const COLS = 17, ROWS = 10, LIMIT = 120; // 초
+  const THEMES = {
+    tangerine: { name: '귤',     emoji: '🍊', color: '#FF8A1A' },
+    peach:     { name: '복숭아', emoji: '🍑', color: '#FF8FAE' },
+    grape:     { name: '포도',   emoji: '🍇', color: '#9C7BDB' },
+    lemon:     { name: '레몬',   emoji: '🍋', color: '#FFD93B' },
+  };
+
+  const $ = id => document.getElementById(id);
+  const boardEl = $('board'), selEl = $('sel'), sumEl = selEl.querySelector('.sum');
+  const stage = boardEl.parentElement;
+
+  let grid = [], cells = [], nums = [];
+  let score = 0, round = 1, running = false, locked = false;
+  let endAt = 0, timerId = null, drag = null, theme = 'tangerine';
+
+  /* ---------- 저장소 (실패해도 동작) ---------- */
+  const store = {
+    get(k){ try { return localStorage.getItem(k); } catch { return null; } },
+    set(k,v){ try { localStorage.setItem(k, v); } catch {} },
+  };
+
+  /* ---------- 칸 생성 ---------- */
+  const FRUIT_SVG = `
+    <svg viewBox="0 0 40 40" aria-hidden="true">
+      <circle class="body" cx="20" cy="22" r="15.5"/>
+      <g class="dots"><circle cx="27" cy="27" r=".9"/><circle cx="12" cy="28" r=".9"/><circle cx="24" cy="33" r=".9"/><circle cx="30" cy="20" r=".8"/></g>
+      <path class="crease" d="M20.5 8.5 C 15 15, 15.5 30, 20 37.3"/>
+      <ellipse class="shine" cx="13.5" cy="15.5" rx="4.2" ry="2.8" transform="rotate(-30 13.5 15.5)"/>
+      <path class="stem" d="M20 8 L20.5 4"/>
+      <path class="leaf" d="M20.5 6 C 23.5 1.2, 30 1.5, 32 3.6 C 28.5 8, 23.5 8, 20.5 6 Z"/>
+    </svg>`;
+  for (let i = 0; i < ROWS * COLS; i++) {
+    const c = document.createElement('div');
+    c.className = 'cell';
+    c.innerHTML = FRUIT_SVG + '<span class="n"></span>';
+    boardEl.appendChild(c);
+    cells.push(c);
+    nums.push(c.querySelector('.n'));
+  }
+
+  /* ---------- 보드 ---------- */
+  function hasMove() {
+    // 2차원 누적합으로 합이 10인 사각형이 하나라도 있는지 검사
+    const W = COLS + 1, P = new Int32Array((ROWS + 1) * W);
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++)
+        P[(r+1)*W + c+1] = grid[r*COLS + c] + P[r*W + c+1] + P[(r+1)*W + c] - P[r*W + c];
+    for (let r1 = 0; r1 < ROWS; r1++)
+      for (let r2 = r1; r2 < ROWS; r2++)
+        for (let c1 = 0; c1 < COLS; c1++)
+          for (let c2 = c1; c2 < COLS; c2++) {
+            const s = P[(r2+1)*W + c2+1] - P[r1*W + c2+1] - P[(r2+1)*W + c1] + P[r1*W + c1];
+            if (s === 10) return true;
+            if (s > 10) break; // 오른쪽으로 넓힐수록 합은 커지기만 함
+          }
+    return false;
+  }
+
+  function newBoard() {
+    do {
+      grid = Array.from({ length: ROWS * COLS }, () => 1 + Math.floor(Math.random() * 9));
+    } while (!hasMove());
+    cells.forEach((c, i) => {
+      c.classList.remove('gone', 'sel', 'spawn');
+      nums[i].textContent = grid[i];
+      c.style.animationDelay = ((i % COLS) + Math.floor(i / COLS)) * 14 + 'ms';
+    });
+    void boardEl.offsetWidth;
+    cells.forEach(c => c.classList.add('spawn'));
+  }
+
+  /* ---------- 드래그 선택 ---------- */
+  function cellAt(e) {
+    const rect = boardEl.getBoundingClientRect();
+    const pad = parseFloat(getComputedStyle(boardEl).paddingLeft) || 0;
+    const cw = (rect.width - pad * 2) / COLS, ch = (rect.height - pad * 2) / ROWS;
+    const c = Math.min(COLS - 1, Math.max(0, Math.floor((e.clientX - rect.left - pad) / cw)));
+    const r = Math.min(ROWS - 1, Math.max(0, Math.floor((e.clientY - rect.top - pad) / ch)));
+    return { r, c };
+  }
+
+  function bounds() {
+    return {
+      r0: Math.min(drag.a.r, drag.b.r), r1: Math.max(drag.a.r, drag.b.r),
+      c0: Math.min(drag.a.c, drag.b.c), c1: Math.max(drag.a.c, drag.b.c),
+    };
+  }
+
+  function selectionSum() {
+    const { r0, r1, c0, c1 } = bounds();
+    let sum = 0;
+    const list = [];
+    for (let r = r0; r <= r1; r++)
+      for (let c = c0; c <= c1; c++) {
+        const i = r * COLS + c;
+        if (grid[i] > 0) { sum += grid[i]; list.push(i); }
+      }
+    return { sum, list };
+  }
+
+  function updateSel() {
+    const { r0, r1, c0, c1 } = bounds();
+    const { sum, list } = selectionSum();
+    const set = new Set(list);
+    cells.forEach((c, i) => c.classList.toggle('sel', set.has(i)));
+    const a = cells[r0 * COLS + c0], b = cells[r1 * COLS + c1];
+    Object.assign(selEl.style, {
+      display: 'block',
+      left: a.offsetLeft + 'px', top: a.offsetTop + 'px',
+      width: (b.offsetLeft + b.offsetWidth - a.offsetLeft) + 'px',
+      height: (b.offsetTop + b.offsetHeight - a.offsetTop) + 'px',
+    });
+    selEl.classList.toggle('ok', sum === 10);
+    sumEl.textContent = sum;
+  }
+
+  function clearSel() {
+    drag = null;
+    selEl.style.display = 'none';
+    cells.forEach(c => c.classList.remove('sel'));
+  }
+
+  boardEl.addEventListener('pointerdown', e => {
+    if (!running || locked) return;
+    e.preventDefault();
+    boardEl.setPointerCapture(e.pointerId);
+    const p = cellAt(e);
+    drag = { a: p, b: p, id: e.pointerId };
+    updateSel();
+  });
+  boardEl.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const p = cellAt(e);
+    if (p.r !== drag.b.r || p.c !== drag.b.c) { drag.b = p; updateSel(); }
+  });
+  boardEl.addEventListener('pointerup', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    commit();
+  });
+  boardEl.addEventListener('pointercancel', clearSel);
+
+  function commit() {
+    const { sum, list } = selectionSum();
+    const selBox = { left: selEl.offsetLeft, top: selEl.offsetTop, w: selEl.offsetWidth };
+    clearSel();
+    if (sum !== 10 || !running) return;
+
+    list.forEach(i => { grid[i] = 0; cells[i].classList.remove('spawn'); cells[i].classList.add('gone'); });
+    score += list.length;
+    const s = $('score');
+    s.textContent = score;
+    s.classList.remove('bump'); void s.offsetWidth; s.classList.add('bump');
+
+    const f = document.createElement('div');
+    f.className = 'float';
+    f.textContent = '+' + list.length;
+    f.style.left = (selBox.left + selBox.w / 2 - 14) + 'px';
+    f.style.top = (selBox.top - 10) + 'px';
+    boardEl.appendChild(f);
+    setTimeout(() => f.remove(), 800);
+
+    const cleared = grid.every(v => v === 0);
+    if (cleared || !hasMove()) nextBoard(cleared);
+  }
+
+  function nextBoard(cleared) {
+    locked = true;
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = cleared
+      ? '🎉 전부 지웠어요!<br><small>새 판 시작 · 점수 누적</small>'
+      : '더 이상 10을 만들 수 없어요<br><small>새 판 시작 · 점수 누적</small>';
+    stage.appendChild(t);
+    setTimeout(() => {
+      t.remove();
+      if (!running) return;
+      round++;
+      $('round').textContent = round;
+      newBoard();
+      locked = false;
+    }, 1100);
+  }
+
+  /* ---------- 타이머 ---------- */
+  function tick() {
+    const left = Math.max(0, endAt - performance.now());
+    const sec = Math.ceil(left / 1000);
+    $('timer').textContent = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+    $('timer').classList.toggle('warn', sec <= 10);
+    $('timeFill').style.width = (left / (LIMIT * 1000) * 100) + '%';
+    if (left <= 0) gameOver();
+  }
+
+  function startGame() {
+    score = 0; round = 1; locked = false;
+    $('score').textContent = 0;
+    $('round').textContent = 1;
+    newBoard();
+    $('startOv').hidden = true;
+    $('overOv').hidden = true;
+    running = true;
+    endAt = performance.now() + LIMIT * 1000;
+    clearInterval(timerId);
+    timerId = setInterval(tick, 100);
+    tick();
+  }
+
+  function gameOver() {
+    running = false;
+    clearInterval(timerId);
+    clearSel();
+    stage.querySelectorAll('.toast').forEach(t => t.remove());
+    const key = 'fruit10-best';
+    const best = Math.max(score, Number(store.get(key)) || 0);
+    store.set(key, best);
+    $('finalScore').textContent = score + '점';
+    $('finalInfo').innerHTML = `${round}판 진행 · 최고 기록 <b>${best}점</b>`;
+    $('overOv').hidden = false;
+  }
+
+  $('startBtn').onclick = startGame;
+  $('againBtn').onclick = startGame;
+
+  /* ---------- 설정 (테마) ---------- */
+  const panel = $('setPanel'), setBtn = $('setBtn'), list = $('themeList');
+  Object.entries(THEMES).forEach(([key, t]) => {
+    const b = document.createElement('button');
+    b.className = 'theme-opt';
+    b.dataset.key = key;
+    b.innerHTML = `<span class="sw" style="background:${t.color}"></span>${t.emoji} ${t.name}`;
+    b.onclick = () => applyTheme(key);
+    list.appendChild(b);
+  });
+
+  function applyTheme(key) {
+    if (!THEMES[key]) key = 'tangerine';
+    theme = key;
+    document.body.dataset.theme = key;
+    const t = THEMES[key];
+    const title = `${t.emoji} ${t.name} 10 만들기`;
+    $('titleText').textContent = title;
+    $('startTitle').textContent = title;
+    document.title = `${t.name} 10 만들기`;
+    list.querySelectorAll('.theme-opt').forEach(b => b.classList.toggle('active', b.dataset.key === key));
+    store.set('fruit10-theme', key);
+  }
+
+  setBtn.onclick = e => {
+    e.stopPropagation();
+    panel.hidden = !panel.hidden;
+    setBtn.setAttribute('aria-expanded', String(!panel.hidden));
+  };
+  document.addEventListener('pointerdown', e => {
+    if (!panel.hidden && !panel.contains(e.target) && e.target !== setBtn) {
+      panel.hidden = true;
+      setBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  /* ---------- 초기화 ---------- */
+  applyTheme(store.get('fruit10-theme') || 'tangerine');
+  newBoard();
+})();
+</script>
+</body>
+</html>
