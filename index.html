@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>과일 10 만들기</title>
+<title>알맹이 게임</title>
 <style>
   :root{
     --bg:#FF9A3D; --bg2:#FF8418;
@@ -187,7 +187,7 @@
       </div>
     </div>
     <div class="title">
-      <h1 id="titleText">🍊 귤 10 만들기</h1>
+      <h1 id="titleText">알맹이 게임</h1>
       <div class="stats">점수 <b id="score">0</b> · <span id="round">1</span>판</div>
     </div>
     <div class="timer" id="timer">2:00</div>
@@ -199,7 +199,7 @@
 
     <div class="overlay" id="startOv">
       <div class="card">
-        <h2 id="startTitle">🍊 귤 10 만들기</h2>
+        <h2 id="startTitle">알맹이 게임</h2>
         <p>드래그로 사각형을 그려<br>숫자의 합이 <b>10</b>이 되면 과일이 사라져요.</p>
         <p>지운 과일 1개 = 1점 · 제한 시간 <b>2분</b></p>
         <p style="font-size:14px;opacity:.8">판을 다 비우거나 더 이상 10을 만들 수 없으면<br>새 판이 나오고 점수는 계속 누적돼요.</p>
@@ -460,10 +460,10 @@
     theme = key;
     document.body.dataset.theme = key;
     const t = THEMES[key];
-    const title = `${t.emoji} ${t.name} 10 만들기`;
+    const title = '알맹이 게임';
     $('titleText').textContent = title;
     $('startTitle').textContent = title;
-    document.title = `${t.name} 10 만들기`;
+    document.title = title;
     list.querySelectorAll('.theme-opt').forEach(b => b.classList.toggle('active', b.dataset.key === key));
     store.set('fruit10-theme', key);
   }
